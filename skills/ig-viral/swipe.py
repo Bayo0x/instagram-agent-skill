@@ -19,6 +19,9 @@ with a header line naming the columns:
 If you only have `followers`, leave median out and the script says so.
 `hook` is the first line of the reel, spoken or on screen, in their words.
 
+Hooks in French are classified against ig-reel/hooks.fr.json and scored with
+the French rules (--lang fr, or auto row by row, so a mixed FR/EN batch works).
+
 Usage
   python3 swipe.py captured.tsv
   python3 swipe.py captured.tsv --out ~/.claude/instagram/swipe.md
@@ -34,6 +37,21 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOOKS = os.path.join(HERE, "..", "ig-reel", "hooks.json")
+HOOKS_FR = os.path.join(HERE, "..", "ig-reel", "hooks.fr.json")
+FR_WORD_RE = re.compile(r"[\w$€%'’-]+")
+_FR_MARKERS = {"le", "la", "les", "des", "est", "une", "et", "pour", "pas", "que",
+               "qui", "dans", "sur", "avec", "je", "tu", "vous", "mon", "ton",
+               "c'est", "j'ai", "ça", "mais", "plus", "ce", "cette", "au", "du"}
+_EN_MARKERS = {"the", "and", "is", "you", "to", "of", "that", "it", "for", "with",
+               "this", "my", "your", "i", "was", "are", "how", "what", "on", "in"}
+
+
+def detect_lang(text):
+    toks = re.findall(r"[\w'’]+", text.lower())
+    fr = sum(1 for t in toks if t.replace("’", "'") in _FR_MARKERS)
+    en = sum(1 for t in toks if t in _EN_MARKERS)
+    fr += len(re.findall(r"[éèêàùçôîâ]", text.lower())) * 0.5
+    return "fr" if fr > en else "en"
 WORD_RE = re.compile(r"[A-Za-z0-9$%'’-]+")
 
 try:                                              # optional: score the hooks too
@@ -91,16 +109,18 @@ def read_rows(path):
     return rows
 
 
-def analyse(rows, formulas):
+def analyse(rows, formulas, formulas_fr=None, lang=None):
     used_median = any(r.get("median") for r in rows)
     for r in rows:
         base = r.get("median") or r.get("followers") or 0
         r["baseline"] = base
         r["outlier"] = round(r["views"] / base, 2) if base else None
-        r["formula_id"], r["formula"] = classify(r["hook"], formulas)
-        r["words"] = len(WORD_RE.findall(r["hook"]))
+        r["lang"] = lang or detect_lang(r["hook"])
+        fr = r["lang"] == "fr"
+        r["formula_id"], r["formula"] = classify(r["hook"], formulas_fr if fr and formulas_fr else formulas)
+        r["words"] = len((FR_WORD_RE if fr else WORD_RE).findall(r["hook"]))
         if score_hook:
-            _, overall, verdict, _ = score_hook(r["hook"])
+            _, overall, verdict, _ = score_hook(r["hook"], r["lang"])
             r["hook_score"], r["hook_verdict"] = round(overall, 1), verdict
         else:
             r["hook_score"], r["hook_verdict"] = None, None
@@ -175,6 +195,9 @@ def main():
     ap = argparse.ArgumentParser(description="Rank collected reels by outlier multiple.")
     ap.add_argument("input", nargs="?", default="-", help="TSV file, or - for stdin")
     ap.add_argument("--hooks", default=HOOKS, help="path to ig-reel/hooks.json")
+    ap.add_argument("--hooks-fr", default=HOOKS_FR, help="path to ig-reel/hooks.fr.json")
+    ap.add_argument("--lang", choices=["auto", "fr", "en"], default="auto",
+                    help="langue des hooks (défaut: auto, ligne par ligne)")
     ap.add_argument("--out", help="also write the swipe file as markdown here")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
@@ -185,7 +208,8 @@ def main():
               file=sys.stderr)
         sys.exit(2)
     formulas = load_formulas(args.hooks)
-    a = analyse(rows, formulas)
+    formulas_fr = load_formulas(args.hooks_fr)
+    a = analyse(rows, formulas, formulas_fr, None if args.lang == "auto" else args.lang)
     if not formulas:
         print("note: hooks.json not found, formulas not named. Pass --hooks.", file=sys.stderr)
     if score_hook is None:

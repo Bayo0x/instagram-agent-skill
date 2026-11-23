@@ -14,8 +14,11 @@ device, the font size and where your line breaks fall, which is exactly why
 you want a margin rather than a caption engineered to end at 125. Change it
 with --truncate if you want to test a tighter one.
 
+French: --lang fr (or auto). French asks ("commente SITE", "écris-moi en DM",
+"enregistre", "lien en bio"), accented hashtags, € amounts, .fr/.be/.ch links.
+
 Usage
-  python3 caption.py caption.txt
+  python3 caption.py caption.txt --lang fr
   python3 caption.py caption.txt --keywords "proposal software,client contract"
   pbpaste | python3 caption.py -
   python3 caption.py caption.txt --json
@@ -53,6 +56,45 @@ ASKS = [
     (re.compile(r"(?i)\btell me\b|\bwhat would you\b|\bwhich one\b"), "answer a question"),
 ]
 
+# Français : appels à l'action, hashtags génériques, € et noms accentués.
+FR_HASHTAG_RE = re.compile(r"(?:^|\s)(#[\w]+)")
+FR_LINK_RE = re.compile(r"https?://\S+|\bwww\.\S+|\b[a-z0-9-]+\.(?:com|co|io|net|org|ai|app|fr|be|ch|lu|ca)\b/?\S*",
+                        re.IGNORECASE)
+FR_CONCRETE_RE = re.compile(r"(?:€|\$)\s?\d|\b\d[\d,.]*\b|(?<!^)\b[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]{2,}\b",
+                            re.MULTILINE)
+FR_ASKS = [
+    (re.compile(r"(?i)\b(?:commente|commentez|écris|écrivez|tape|tapez)\b[^.!?\n]{0,25}?"
+                r"[\"«“]?\s*\b[A-Z0-9ÀÉÈ]{2,}\b"), "commenter un mot-clé"),
+    (re.compile(r"(?i)\b(?:envoie|envoyez)[- ]moi\b|\b(?:écris|écrivez)[- ]moi en (?:dm|mp|privé)\b"
+                r"|\ben (?:dm|mp)\b"), "m'écrire en DM"),
+    (re.compile(r"(?i)\b(?:enregistre|enregistrez|sauvegarde|sauvegardez)\b"), "enregistrer"),
+    (re.compile(r"(?i)\b(?:partage|partagez)\b"), "partager"),
+    (re.compile(r"(?i)\babonne[- ]toi\b|\babonnez[- ]vous\b|\bsuis[- ]moi\b|\bsuivez[- ]moi\b"),
+     "s'abonner"),
+    (re.compile(r"(?i)\blien (?:en|dans (?:ma|la)) bio\b"), "lien en bio"),
+    (re.compile(r"(?i)\b(?:swipe|glisse|glissez|fais défiler)\b"), "swiper"),
+    (re.compile(r"(?i)\b(?:dis|dites)[- ]moi\b|\b(?:tu|vous) en pense[sz] quoi\b|\blequel\b"
+                r"|\blaquelle\b|\btu préfères\b|\bvous préférez\b"), "répondre à une question"),
+    (re.compile(r"(?i)\b(?:réserve|réservez|prends|prenez) (?:ton|votre) (?:appel|rdv|rendez-vous|créneau)\b"),
+     "réserver un appel"),
+]
+FR_FILLER_TAGS = {"#pourtoi", "#pourtoii", "#pourtoiii", "#explorer", "#tendance",
+                  "#abonnetoi", "#instafrance", "#france", "#reelsfrance", "#viralfrance"}
+_FR_MARKERS = {"le", "la", "les", "des", "est", "une", "et", "pour", "pas", "que",
+               "qui", "dans", "sur", "avec", "je", "tu", "vous", "mon", "ton",
+               "c'est", "j'ai", "ça", "mais", "plus", "ce", "cette", "au", "du"}
+_EN_MARKERS = {"the", "and", "is", "you", "to", "of", "that", "it", "for", "with",
+               "this", "my", "your", "i", "was", "are", "how", "what", "on", "in"}
+
+
+def detect_lang(text):
+    toks = re.findall(r"[\w'’]+", text.lower())
+    fr = sum(1 for t in toks if t.replace("’", "'") in _FR_MARKERS)
+    en = sum(1 for t in toks if t in _EN_MARKERS)
+    fr += len(re.findall(r"[éèêàùçôîâ]", text.lower())) * 0.5
+    return "fr" if fr > en else "en"
+
+
 FILLER_TAGS = {"#viral", "#fyp", "#explore", "#explorepage", "#foryou", "#foryoupage",
                "#trending", "#instagood", "#love", "#follow", "#like4like", "#reels",
                "#reelsinstagram", "#viralreels", "#instadaily"}
@@ -76,20 +118,33 @@ def render_box(window, truncated, out=sys.stdout, width=52):
     print("  +" + "-" * (width + 2 - len(tail) - 2) + f" {tail} " + "+", file=out)
 
 
-def analyse(text, cut=TRUNCATE, keywords=None):
+def analyse(text, cut=TRUNCATE, keywords=None, lang=None):
+    lang = lang if lang in ("en", "fr") else detect_lang(text)
+    fr = lang == "fr"
+    hashtag_re = FR_HASHTAG_RE if fr else HASHTAG_RE
+    link_re = FR_LINK_RE if fr else LINK_RE
+    concrete_re = FR_CONCRETE_RE if fr else CONCRETE_RE
+    asks_list = FR_ASKS + ASKS if fr else ASKS
+    filler_tags = FILLER_TAGS | FR_FILLER_TAGS if fr else FILLER_TAGS
     text = text.rstrip()
     stripped = text.strip()
     chars = len(stripped)
     lines = [l for l in stripped.split("\n")]
     first_line = lines[0].strip() if lines else ""
-    tags = HASHTAG_RE.findall(stripped)
+    tags = hashtag_re.findall(stripped)
     mentions = MENTION_RE.findall(stripped)
-    links = LINK_RE.findall(stripped)
+    links = link_re.findall(stripped)
     emoji = EMOJI_RE.findall(stripped)
     window = visible_window(stripped, cut)
     truncated = chars > cut
-    asks = [name for pattern, name in ASKS if pattern.search(stripped)]
-    filler = [t for t in tags if t.lower() in FILLER_TAGS]
+    asks = []
+    for pattern, name in asks_list:
+        if pattern.search(stripped) and name not in asks:
+            asks.append(name)
+    if fr:   # the English "DM me"/"follow" patterns can double-count a French ask
+        asks = [a for a in asks if a not in ("DM me", "follow", "save this", "share this")
+                or not any(x in asks for x in ("m'écrire en DM", "s'abonner", "enregistrer", "partager"))]
+    filler = [t for t in tags if t.lower() in filler_tags]
     keywords = [k.strip() for k in (keywords or []) if k.strip()]
 
     checks = []
@@ -113,9 +168,9 @@ def analyse(text, cut=TRUNCATE, keywords=None):
     else:
         add("FIRST LINE", "PASS", f"{len(first_line)} characters, lands whole")
 
-    add("HOOK IS CONCRETE", "PASS" if CONCRETE_RE.search(window) else "WARN",
-        f"{len(CONCRETE_RE.findall(window))} number(s) or name(s) in the visible window"
-        + ("" if CONCRETE_RE.search(window) else " - nothing checkable before the tap"))
+    add("HOOK IS CONCRETE", "PASS" if concrete_re.search(window) else "WARN",
+        f"{len(concrete_re.findall(window))} number(s) or name(s) in the visible window"
+        + ("" if concrete_re.search(window) else " - nothing checkable before the tap"))
 
     if len(tags) > HASHTAG_LIMIT:
         add("HASHTAGS", "FAIL", f"{len(tags)} tags, over Instagram's cap of {HASHTAG_LIMIT}. "
@@ -170,6 +225,7 @@ def analyse(text, cut=TRUNCATE, keywords=None):
     verdict = "FIX" if fails else ("REVIEW" if warns else "READY")
 
     return {
+        "lang": lang,
         "characters": chars, "limit": LIMIT, "truncate_at": cut,
         "visible": window, "truncated": truncated,
         "first_line_chars": len(first_line),
@@ -198,11 +254,14 @@ def main():
     ap.add_argument("--truncate", type=int, default=TRUNCATE,
                     help=f"characters shown before '... more' (default {TRUNCATE})")
     ap.add_argument("--keywords", default="", help="comma-separated terms you want to be found for")
+    ap.add_argument("--lang", choices=["auto", "fr", "en"], default="auto",
+                    help="langue de la légende (défaut: auto)")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
     raw = sys.stdin.read() if args.input == "-" else open(args.input, encoding="utf-8").read()
-    a = analyse(raw, cut=args.truncate, keywords=args.keywords.split(","))
+    a = analyse(raw, cut=args.truncate, keywords=args.keywords.split(","),
+                lang=None if args.lang == "auto" else args.lang)
     if args.json:
         print(json.dumps(a, indent=2, ensure_ascii=False))
     else:

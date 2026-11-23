@@ -1,5 +1,24 @@
 # The Instagram agent skill
 
+> **Fork FR.** Ce fork ajoute le français à côté de l'anglais. Tous les
+> scripts prennent `--lang fr|en|auto` (auto par défaut, détecté sur le texte),
+> avec leurs propres listes françaises : chiffres dits à l'oral, montants en €,
+> marqueurs de tension, ouvertures molles ("salut", "aujourd'hui je voulais"),
+> tu/vous, appels à l'action FR, hashtags accentués. Deux fichiers en plus :
+> [`hooks.fr.json`](skills/ig-reel/hooks.fr.json) (les 26 formules en français
+> parlé) et [`slop.fr.json`](skills/ig-human/slop.fr.json) (le lexique IA
+> français : "plongeons dans", "incontournable", "n'hésitez pas à", guillemets
+> « », espaces insécables). [`templates/voice.fr.md`](templates/voice.fr.md) est
+> le modèle de voix en français. `/ig-reel` choisit aussi le format avant
+> d'écrire (facecam, faceless texte + musique, voix off sur écran) et sait
+> monter un **essai facecam** que `/ig-audit` compare ensuite au format
+> habituel.
+>
+> Limite honnête : les seuils viennent du test de l'auteur sur des hooks
+> anglais. Les regex françaises n'ont pas encore été recalées sur un corpus de
+> vrais hooks FR : c'est un signal, pas un verdict. Les sorties anglaises sont
+> identiques à l'original (vérifié).
+
 Thirteen Claude skills that run an Instagram account. Free, MIT, no signup, no
 API key, nothing to connect.
 

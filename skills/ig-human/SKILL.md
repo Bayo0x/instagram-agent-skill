@@ -14,11 +14,38 @@ description: >-
 Two tools live in this folder and they both actually run. Use them. Do not
 eyeball this.
 
+## Langue (fork FR)
+
+Ce fork marche en français et en anglais. Écris dans la langue de
+l'utilisateur, ou celle que `voice.md` indique.
+
+En français :
+- Français parlé, pas écrit : "t'as", "ça", le "ne" qui saute quand c'est la
+  voix de la personne. Tutoiement ou vouvoiement selon `voice.md` (par défaut,
+  celui que la personne utilise sur son compte).
+- Pas de tirets cadratins (—), pas de guillemets « » dans un texte à poster,
+  pas de tournures d'IA ("plongeons dans", "incontournable", "n'hésitez pas à").
+- Montants en euros, espace des milliers : "18 000 €". Jamais de chiffre
+  inventé : `{{ton chiffre}}` et un flag.
+- Les scripts prennent `--lang fr` (sinon `--lang auto`, détecté sur le texte).
+  Les formules de hook FR sont dans `ig-reel/hooks.fr.json`, le lexique IA
+  français dans `ig-human/slop.fr.json`.
+- Les seuils des scripts viennent d'un test sur des hooks anglais. En français
+  ils n'ont pas encore été recalés sur un corpus : c'est un signal, pas un
+  verdict.
+
 ```bash
 python3 humanize.py draft.txt --report        # clean it, show what changed
 python3 detect.py draft.txt                    # score it, five checks
 python3 detect.py before.txt after.txt         # prove the delta
+python3 humanize.py brouillon.txt --report --lang fr   # français : slop.fr.json
+python3 detect.py brouillon.txt --lang fr
 ```
+
+In French the voice check counts spoken markers instead of contractions ("ça",
+"t'as", "du coup", a dropped "ne"), because French elisions are compulsory and
+say nothing about register. Guillemets « » and narrow no-break spaces count as
+fingerprint, since that is how generated French text is typeset.
 
 Both read `slop.json`: 154 stock words and phrases with plain-English
 replacements, 18 invisible character classes, 11 typographic substitutions and

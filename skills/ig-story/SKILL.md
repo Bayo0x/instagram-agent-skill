@@ -15,6 +15,26 @@ how the people who already follow you decide whether you are a person worth
 buying from, and they are the only surface on Instagram where a tap turns into
 a conversation in one move.
 
+## Langue (fork FR)
+
+Ce fork marche en français et en anglais. Écris dans la langue de
+l'utilisateur, ou celle que `voice.md` indique.
+
+En français :
+- Français parlé, pas écrit : "t'as", "ça", le "ne" qui saute quand c'est la
+  voix de la personne. Tutoiement ou vouvoiement selon `voice.md` (par défaut,
+  celui que la personne utilise sur son compte).
+- Pas de tirets cadratins (—), pas de guillemets « » dans un texte à poster,
+  pas de tournures d'IA ("plongeons dans", "incontournable", "n'hésitez pas à").
+- Montants en euros, espace des milliers : "18 000 €". Jamais de chiffre
+  inventé : `{{ton chiffre}}` et un flag.
+- Les scripts prennent `--lang fr` (sinon `--lang auto`, détecté sur le texte).
+  Les formules de hook FR sont dans `ig-reel/hooks.fr.json`, le lexique IA
+  français dans `ig-human/slop.fr.json`.
+- Les seuils des scripts viennent d'un test sur des hooks anglais. En français
+  ils n'ont pas encore été recalés sur un corpus : c'est un signal, pas un
+  verdict.
+
 Nobody outside your followers sees these, so the job is completely different:
 depth, not reach.
 

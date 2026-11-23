@@ -15,6 +15,26 @@ description: >-
 The research skill. Everything else in this pack writes; this one goes and
 looks. Run it monthly, not daily. Formulas last a season.
 
+## Langue (fork FR)
+
+Ce fork marche en français et en anglais. Écris dans la langue de
+l'utilisateur, ou celle que `voice.md` indique.
+
+En français :
+- Français parlé, pas écrit : "t'as", "ça", le "ne" qui saute quand c'est la
+  voix de la personne. Tutoiement ou vouvoiement selon `voice.md` (par défaut,
+  celui que la personne utilise sur son compte).
+- Pas de tirets cadratins (—), pas de guillemets « » dans un texte à poster,
+  pas de tournures d'IA ("plongeons dans", "incontournable", "n'hésitez pas à").
+- Montants en euros, espace des milliers : "18 000 €". Jamais de chiffre
+  inventé : `{{ton chiffre}}` et un flag.
+- Les scripts prennent `--lang fr` (sinon `--lang auto`, détecté sur le texte).
+  Les formules de hook FR sont dans `ig-reel/hooks.fr.json`, le lexique IA
+  français dans `ig-human/slop.fr.json`.
+- Les seuils des scripts viennent d'un test sur des hooks anglais. En français
+  ils n'ont pas encore été recalés sur un corpus : c'est un signal, pas un
+  verdict.
+
 One tool lives in this folder and it runs:
 
 ```bash
@@ -95,6 +115,7 @@ python3 -m yt_dlp --flat-playlist --playlist-end 40 -J \
   "https://www.youtube.com/@HANDLE/shorts" > channel.json
 
 # the spoken first line of one short, from its auto-captions
+# (--sub-langs "fr.*" pour des Shorts en français)
 python3 -m yt_dlp --skip-download --write-auto-subs --sub-langs "en.*" \
   --sub-format json3 -o hook "https://www.youtube.com/watch?v=VIDEO_ID"
 ```
@@ -116,7 +137,8 @@ python3 swipe.py captured.tsv --out ~/.claude/instagram/swipe.md
 ```
 
 It computes the outlier multiple, names the hook formula using the same 26
-formulas `/ig-reel` writes from, scores each hook with `hookscore.py`, and
+formulas `/ig-reel` writes from (French hooks against `hooks.fr.json`, detected
+row by row, or force it with `--lang fr`), scores each hook with `hookscore.py`, and
 prints what separates the top third from the bottom third.
 
 ## Step 4: say what it means, carefully

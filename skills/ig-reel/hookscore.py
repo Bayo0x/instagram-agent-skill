@@ -23,8 +23,13 @@ Instagram shows it to. Trust the retention graph over this script.
 
 Each check returns 0 to 100. Higher is better.
 
+Langue: --lang fr|en|auto (défaut auto, détecté ligne par ligne). Le français
+a ses propres listes (chiffres dits à l'oral, €, tension, ouvertures molles,
+tu/vous) et ses propres dealbreakers ("arrête de scroller", "dans cette vidéo").
+
 Usage
   python3 hookscore.py hooks.txt              # one hook per line, ranked
+  python3 hookscore.py hooks.txt --lang fr
   python3 hookscore.py --hook "I lost $18,000 on one missing contract."
   pbpaste | python3 hookscore.py -
   python3 hookscore.py hooks.txt --json
@@ -109,20 +114,141 @@ DEALBREAKERS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Français. Même logique, vocabulaire du français parlé. Un mot = ce qui est
+# entre deux espaces, donc "j'ai" compte pour un mot (c'est aussi comme ça
+# que se mesure le débit de 165 mots/min en français).
+# ---------------------------------------------------------------------------
+
+FR_WORD_RE = re.compile(r"[\w$€%'’-]+")
+FR_NUMBER_RE = re.compile(
+    r"(?:€|\$)\s?\d[\d\s.,]*\d|(?:€|\$)\s?\d"                 # €18 000
+    r"|\b\d[\d.,]*(?:[   ]\d{3})*(?:[.,]\d+)?\s?"   # un chiffre
+    r"(?:€|euros?\b|balles\b|%|k\b|k€|x\b|h\b|heures?\b|min\b|minutes?\b"
+    r"|jours?\b|semaines?\b|mois\b|ans\b|années?\b|fois\b|clients?\b|sites?\b)?",
+    re.IGNORECASE)
+FR_PROPER_RE = re.compile(r"(?<!^)\b[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]{2,}\b")
+FR_ELISION_RE = re.compile(r"^(?:[ljmtsdcn]|qu|jusqu|lorsqu|puisqu)['’]", re.IGNORECASE)
+
+FR_SPOKEN_NUMBERS = {
+    "zéro", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf",
+    "dix", "onze", "douze", "quinze", "vingt", "trente", "quarante",
+    "cinquante", "soixante", "cent", "cents", "mille", "million", "millions",
+    "milliard", "milliards", "douzaine", "moitié", "double", "triple",
+}
+FR_MONEY_WORDS = {
+    "euros", "euro", "balles", "centimes", "pourcent", "salaire", "loyer",
+    "smic", "devis", "facture", "factures", "bénéfice", "bénéf", "marge",
+    "chiffre", "ca", "millionnaire", "prix", "tarif", "tarifs",
+}
+FR_STAKES = {
+    "arrête", "arrêtez", "stop", "jamais", "faux", "erreur", "erreurs",
+    "perdu", "perdre", "perds", "perte", "coûte", "coûté", "coûter", "fauché",
+    "cassé", "raté", "rater", "échec", "échoué", "personne", "pas", "rien",
+    "aucun", "aucune", "quitté", "viré", "supprimé", "supprime",
+    "tué", "tue", "remplacé", "remplace", "gratuit", "payé", "payer", "paie",
+    "embauché", "économisé", "premier", "première", "interdit", "illégal",
+    "pire", "déteste", "détesté", "gaspillé", "arnaque", "mensonge", "menti",
+    "vérité", "secret", "caché", "volé", "avant", "jusqu'à", "lieu", "mais",
+    "sauf", "problème", "risque", "danger", "attention", "regret",
+    "regrette", "aurais", "devrais", "encore", "déjà", "seulement", "sans",
+    "contre", "vs", "vraiment", "honte", "flop", "flopé", "ruiné",
+}
+FR_WEAK_OPENERS = [
+    "alors", "bon", "ok", "okay", "salut", "coucou", "hello", "hey", "yo",
+    "bonjour", "bonsoir", "bienvenue", "aujourd'hui", "aujourd’hui",
+    "en gros", "honnêtement", "franchement", "écoute", "écoutez", "euh",
+    "bah", "ben", "juste", "laisse", "laissez", "je voulais", "je vais",
+    "je veux", "l'un des", "l’un des", "un des", "une des", "est-ce que",
+    "vous avez", "tu as", "t'as", "t’as", "as-tu", "avez-vous", "dans cette",
+    "dans ce", "il y a", "y'a", "y’a", "ceci est", "il est", "en tant que",
+    "quand on", "si vous avez", "si tu as", "tu sais", "vous savez",
+    "petit rappel", "petite astuce",
+]
+FR_IMPERATIVES = {
+    "arrête", "arrêtez", "stop", "vole", "volez", "pique", "piquez", "copie",
+    "copiez", "supprime", "supprimez", "essaie", "essaye", "essayez",
+    "regarde", "regardez", "lis", "lisez", "enregistre", "enregistrez",
+    "sauvegarde", "utilise", "utilisez", "construis", "fais", "faites",
+    "écris", "écrivez", "envoie", "envoyez", "prends", "prenez", "commence",
+    "commencez", "quitte", "jamais", "toujours", "ne", "mets", "mettez",
+    "lance", "lancez", "vérifie", "vérifiez", "garde", "oublie", "oubliez",
+    "change", "changez", "demande", "demandez", "note", "notez", "teste",
+    "testez", "évite", "évitez",
+}
+FR_DEALBREAKERS = [
+    (re.compile(r"(?i)^\s*(?:arr[êe]te[zs]? de scroller|stop(?:pe)? (?:ton|le) scroll"
+                r"|ne scrolle[zs]? pas|attends?,? ne scrolle)"),
+     "Ouvre sur \"arrête de scroller\". Demander l'attention prouve qu'on ne l'a pas méritée."),
+    (re.compile(r"(?i)\b(?:dans (?:cette|la) vidéo|dans ce (?:réel|reel)|aujourd['’]hui je vais"
+                r"|je vais (?:te|vous) (?:montrer|expliquer|apprendre))\b"),
+     "Préambule de vidéo. Supprime-le et ouvre sur le résultat."),
+    (re.compile(r"(?i)^\s*(?:salut|coucou|hello|hey|bonjour|bonsoir|bienvenue|yo)\b"),
+     "Salutation. Personne n'est venu sur le feed pour se faire saluer."),
+    (HASHTAG_RE,
+     "Hashtag dans le hook. Les hashtags vont en bas de la légende, si on en met."),
+    (EMOJI_RE,
+     "Emoji dans le hook. En texte à l'écran à taille de hook, c'est des mots ou un emoji, pas les deux."),
+]
+FR_YOU_RE = re.compile(r"(?i)(?<![\w])(?:tu|te|toi|ton|ta|tes|vous|votre|vos|t['’])(?![\w])|(?<![\w])t['’]")
+FR_ME_RE = re.compile(r"(?i)(?<![\w])(?:je|me|moi|mon|ma|mes|nous|notre|nos|on)(?![\w])|(?<![\w])[jm]['’]")
+
+# Mots-outils qui trahissent la langue. Sert à --lang auto.
+_FR_MARKERS = {"le", "la", "les", "des", "est", "une", "et", "pour", "pas", "que",
+               "qui", "dans", "sur", "avec", "je", "tu", "vous", "mon", "ton",
+               "c'est", "j'ai", "ça", "mais", "plus", "ce", "cette", "au", "du"}
+_EN_MARKERS = {"the", "and", "is", "you", "to", "of", "that", "it", "for", "with",
+               "this", "my", "your", "i", "was", "are", "how", "what", "on", "in"}
+
+
+def detect_lang(text):
+    """'fr' ou 'en', sur les mots-outils et les accents."""
+    toks = re.findall(r"[\w'’]+", text.lower())
+    fr = sum(1 for t in toks if t.replace("’", "'") in _FR_MARKERS)
+    en = sum(1 for t in toks if t in _EN_MARKERS)
+    fr += len(re.findall(r"[éèêàùçôîâ]", text.lower())) * 0.5
+    return "fr" if fr > en else "en"
+
+
 def clamp(n):
     return max(0.0, min(100.0, n))
 
 
-def words(text):
+def words(text, lang="en"):
+    if lang == "fr":
+        # "18 000 €" se dit d'un bloc : un seul mot ici aussi.
+        text = re.sub(r"(?<=\d)[   .](?=\d{3}\b)", "", text)
+        return FR_WORD_RE.findall(text)
     # "$18,000" is one word when it is spoken, so it is one word here too.
     return WORD_RE.findall(re.sub(r"(?<=\d),(?=\d)", "", text))
 
 
-def check_length(text):
+def norm(token, lang="en"):
+    """Lower-case, strip quotes; in French also drop the elision (n'ai -> ai)."""
+    t = token.lower().strip("'’")
+    if lang == "fr":
+        t = FR_ELISION_RE.sub("", t).replace("’", "'")
+    return t
+
+
+def cfg(lang):
+    if lang == "fr":
+        return dict(number=FR_NUMBER_RE, proper=FR_PROPER_RE, spoken=FR_SPOKEN_NUMBERS,
+                    money=FR_MONEY_WORDS, stakes=FR_STAKES, openers=FR_WEAK_OPENERS,
+                    imperatives=FR_IMPERATIVES, dealbreakers=FR_DEALBREAKERS,
+                    max_chars=65, price=r"(?:€|\$)\s?\d|\d\s?(?:€|euros?\b|k€)")
+    return dict(number=NUMBER_RE, proper=PROPER_RE, spoken=SPOKEN_NUMBERS,
+                money=MONEY_WORDS, stakes=STAKES, openers=WEAK_OPENERS,
+                imperatives=IMPERATIVES, dealbreakers=DEALBREAKERS,
+                max_chars=60, price=r"\$\s?\d")
+
+
+def check_length(text, lang="en"):
     """A hook has to land before the thumb moves. Roughly two seconds."""
-    w = words(text)
+    c = cfg(lang)
+    w = words(text, lang)
     n = len(w)
-    secs = n / 2.75                      # ~165 words per minute, spoken
+    secs = n / 2.75                      # ~165 words per minute, spoken (EN and FR)
     chars = len(text.strip())
     if 5 <= n <= 12:
         score = 100.0
@@ -130,80 +256,114 @@ def check_length(text):
         score = clamp(100 - (5 - n) * 20)
     else:
         score = clamp(100 - (n - 12) * 11)
-    if chars > 60:                       # two lines of big on-screen text
+    if chars > c["max_chars"]:           # two lines of big on-screen text
         score -= 12
+    if lang == "fr":
+        return clamp(score), f"{n} mots, {chars} caractères, ~{secs:.1f}s à l'oral (viser 5-12 mots)"
     return clamp(score), f"{n} words, {chars} chars, ~{secs:.1f}s spoken (want 5-12 words)"
 
 
-def check_specificity(text):
+def check_specificity(text, lang="en"):
     """One concrete thing beats three abstract ones."""
-    nums = [n.strip() for n in NUMBER_RE.findall(text) if n.strip()]
-    propers = set(PROPER_RE.findall(text))
-    low = [w.lower().strip("'’") for w in words(text)]
-    spoken = [w for w in low if w in SPOKEN_NUMBERS or w in MONEY_WORDS]
+    c = cfg(lang)
+    nums = [n.strip() for n in c["number"].findall(text) if n.strip()]
+    propers = set(c["proper"].findall(text))
+    low = [norm(w, lang) for w in words(text, lang)]
+    spoken = [w for w in low if w in c["spoken"] or w in c["money"]]
     hits = len(nums) + len(propers) + len(spoken)
     score = 15.0 if hits == 0 else clamp(45 + hits * 30)
     found = ", ".join(nums[:2] + sorted(propers)[:2] + spoken[:2])
+    if lang == "fr":
+        return score, (f"{hits} élément(s) concret(s)" + (f" : {found}" if found else
+                       " - aucun chiffre, aucun nom, rien de vérifiable"))
     return score, (f"{hits} concrete marker(s)" + (f": {found}" if found else
                    " - no number, no name, nothing checkable"))
 
 
-def check_stakes(text):
+def check_stakes(text, lang="en"):
     """Tension, cost, negation. Something the viewer might lose."""
-    w = [x.lower().strip("'’") for x in words(text)]
-    hits = [x for x in w if x in STAKES]
+    c = cfg(lang)
+    w = [norm(x, lang) for x in words(text, lang)]
+    hits = [x for x in w if x in c["stakes"]]
     markers = sorted(set(hits))
-    if re.search(r"\$\s?\d", text):
-        markers.append("a price")
+    if lang == "fr" and re.search(r"(?i)(?<![\w])n['’]|\bne\b", text) and "pas" not in markers:
+        markers.append("négation")
+    if re.search(c["price"], text):
+        markers.append("un prix" if lang == "fr" else "a price")
     n = len(markers)
     score = {0: 20.0, 1: 70.0}.get(n, 100.0)
-    detail = f"{n} tension marker(s)" + (f": {', '.join(markers[:4])}" if markers else
-                                         " - nothing is at stake in this line")
+    if lang == "fr":
+        detail = f"{n} marqueur(s) de tension" + (f" : {', '.join(markers[:4])}" if markers else
+                                                  " - rien n'est en jeu dans cette phrase")
+    else:
+        detail = f"{n} tension marker(s)" + (f": {', '.join(markers[:4])}" if markers else
+                                             " - nothing is at stake in this line")
     return clamp(score), detail
 
 
-def check_frontload(text):
+def check_frontload(text, lang="en"):
     """The interesting word cannot be in position nine."""
-    w = words(text)
+    c = cfg(lang)
+    w = words(text, lang)
     if not w:
         return 0.0, "empty"
-    low = [x.lower().strip("'’") for x in w]
-    opener = " ".join(low[:2])
+    low = [norm(x, lang) for x in w]
     penalty = 0
     hit_opener = None
-    for weak in WEAK_OPENERS:
-        if opener.startswith(weak) or low[0] == weak:
-            penalty, hit_opener = 30, weak
-            break
+    if lang == "fr":
+        head = text.strip().lower().lstrip("\"“«' ")
+        for weak in c["openers"]:
+            if re.match(re.escape(weak) + r"(?![\w])", head):
+                penalty, hit_opener = 30, weak
+                break
+    else:
+        opener = " ".join(low[:2])
+        for weak in c["openers"]:
+            if opener.startswith(weak) or low[0] == weak:
+                penalty, hit_opener = 30, weak
+                break
     payload = None
     for i, token in enumerate(low):
-        if (token in STAKES or token in SPOKEN_NUMBERS or token in MONEY_WORDS
-                or NUMBER_RE.match(w[i]) or (i and PROPER_RE.match(w[i]))):
+        if (token in c["stakes"] or token in c["spoken"] or token in c["money"]
+                or c["number"].match(w[i]) or (i and c["proper"].match(w[i]))):
             payload = i
             break
+    fr = lang == "fr"
     if payload is None:
         base = 30.0
-        where = "no payload word anywhere in the line"
+        where = "aucun mot fort dans la phrase" if fr else "no payload word anywhere in the line"
     elif payload <= 3:
         base = 100.0
-        where = f"payload at word {payload + 1}"
+        where = (f"mot fort en position {payload + 1}" if fr else f"payload at word {payload + 1}")
     elif payload <= 6:
         base = 70.0
-        where = f"payload at word {payload + 1}, could move forward"
+        where = (f"mot fort en position {payload + 1}, peut avancer" if fr
+                 else f"payload at word {payload + 1}, could move forward")
     else:
         base = 40.0
-        where = f"payload at word {payload + 1}, too late"
-    detail = where + (f"; weak opener \"{hit_opener}\"" if hit_opener else "")
-    return clamp(base - penalty), detail
+        where = (f"mot fort en position {payload + 1}, trop tard" if fr
+                 else f"payload at word {payload + 1}, too late")
+    if hit_opener:
+        where += (f" ; ouverture molle \"{hit_opener}\"" if fr else f"; weak opener \"{hit_opener}\"")
+    return clamp(base - penalty), where
 
 
-def check_address(text):
+def check_address(text, lang="en"):
     """Aimed at one viewer, or floating in the air."""
+    c = cfg(lang)
     low = text.lower()
-    w = [x.lower().strip("'’") for x in words(text)]
+    w = [norm(x, lang) for x in words(text, lang)]
+    if lang == "fr":
+        if FR_YOU_RE.search(text):
+            return 100.0, "parle au spectateur (tu/vous)"
+        if w and w[0] in c["imperatives"]:
+            return 90.0, f"ouvre sur un impératif (\"{w[0]}\")"
+        if FR_ME_RE.search(text):
+            return 70.0, "première personne, personne d'autre dans la pièce"
+        return 35.0, "troisième personne, personne n'est visé"
     if re.search(r"\b(you|your|you're|youre|yourself)\b", low):
         return 100.0, "speaks to the viewer"
-    if w and w[0] in IMPERATIVES:
+    if w and w[0] in c["imperatives"]:
         return 90.0, f"imperative opener (\"{w[0]}\")"
     if re.search(r"\b(i|my|me|we|our)\b", low):
         return 70.0, "first person, no viewer named"
@@ -213,15 +373,17 @@ def check_address(text):
 CHECKS = ["LENGTH", "SPECIFICITY", "STAKES", "FRONTLOAD", "ADDRESS"]
 
 
-def run(text):
+def run(text, lang=None):
+    """Score one hook. lang: 'en', 'fr' or None to detect it from the text."""
+    lang = lang if lang in ("en", "fr") else detect_lang(text)
     results = {
-        "LENGTH": check_length(text),
-        "SPECIFICITY": check_specificity(text),
-        "STAKES": check_stakes(text),
-        "FRONTLOAD": check_frontload(text),
-        "ADDRESS": check_address(text),
+        "LENGTH": check_length(text, lang),
+        "SPECIFICITY": check_specificity(text, lang),
+        "STAKES": check_stakes(text, lang),
+        "FRONTLOAD": check_frontload(text, lang),
+        "ADDRESS": check_address(text, lang),
     }
-    flags = [msg for pattern, msg in DEALBREAKERS if pattern.search(text)]
+    flags = [msg for pattern, msg in cfg(lang)["dealbreakers"] if pattern.search(text)]
     scores = [results[c][0] for c in CHECKS]
     # The weakest property caps the hook, same logic as detect.py: one bad
     # property is enough for the thumb to keep moving.
@@ -272,8 +434,11 @@ def main():
     ap = argparse.ArgumentParser(description="Score a Reel hook on five properties.")
     ap.add_argument("input", nargs="?", default="-", help="file with one hook per line, or -")
     ap.add_argument("--hook", help="score a single hook given on the command line")
+    ap.add_argument("--lang", choices=["auto", "fr", "en"], default="auto",
+                    help="langue du hook (défaut: auto-détection par ligne)")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
+    lang = None if args.lang == "auto" else args.lang
 
     if args.hook:
         lines = [args.hook]
@@ -286,9 +451,10 @@ def main():
 
     payload = []
     for line in lines:
-        results, overall, verdict, flags = run(line)
+        results, overall, verdict, flags = run(line, lang)
         payload.append({
             "hook": line,
+            "lang": lang or detect_lang(line),
             "checks": {k: {"score": round(v[0], 1), "detail": v[1]} for k, v in results.items()},
             "weakest": min(CHECKS, key=lambda c: results[c][0]),
             "flags": flags,
@@ -301,7 +467,7 @@ def main():
         return
 
     if len(payload) == 1:
-        results, overall, verdict, flags = run(lines[0])
+        results, overall, verdict, flags = run(lines[0], lang)
         render_one(lines[0], results, overall, verdict, flags)
     else:
         render_table(sorted(payload, key=lambda r: -r["score"]))

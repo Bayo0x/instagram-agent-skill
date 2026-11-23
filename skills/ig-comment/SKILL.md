@@ -14,6 +14,26 @@ to do badly. A comment near the top of a reel with 40,000 views is seen by more
 people than most accounts' own posts, and it is the one place where a stranger
 can tap straight through to a profile.
 
+## Langue (fork FR)
+
+Ce fork marche en français et en anglais. Écris dans la langue de
+l'utilisateur, ou celle que `voice.md` indique.
+
+En français :
+- Français parlé, pas écrit : "t'as", "ça", le "ne" qui saute quand c'est la
+  voix de la personne. Tutoiement ou vouvoiement selon `voice.md` (par défaut,
+  celui que la personne utilise sur son compte).
+- Pas de tirets cadratins (—), pas de guillemets « » dans un texte à poster,
+  pas de tournures d'IA ("plongeons dans", "incontournable", "n'hésitez pas à").
+- Montants en euros, espace des milliers : "18 000 €". Jamais de chiffre
+  inventé : `{{ton chiffre}}` et un flag.
+- Les scripts prennent `--lang fr` (sinon `--lang auto`, détecté sur le texte).
+  Les formules de hook FR sont dans `ig-reel/hooks.fr.json`, le lexique IA
+  français dans `ig-human/slop.fr.json`.
+- Les seuils des scripts viennent d'un test sur des hooks anglais. En français
+  ils n'ont pas encore été recalés sur un corpus : c'est un signal, pas un
+  verdict.
+
 A generic comment is worse than none. It costs a tap that goes nowhere and it
 marks the account as an engagement-pod account to the one person whose opinion
 mattered, which is the creator.

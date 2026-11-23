@@ -1,0 +1,386 @@
+
+HOOK RANKING
+==============================================================================
+->  85.6 STRONG  Nobody tells you that your first 30 reels are supposed to f...
+        weakest: SPECIFICITY (75)
+    81.4 STRONG  I lost $18,000 because of one missing contract.
+        weakest: ADDRESS (70)
+    55.9 OK      Steal this four line follow up it took me two years to write
+        weakest: STAKES (20)
+    54.4 OK      Stop scrolling if you want to grow on Instagram in 2026 🔥
+        weakest: STAKES (70)
+        dealbreaker: Opens with "stop scrolling". Asking for attention proves you have not earned it.
+        dealbreaker: Emoji in the hook. On-screen text at hook size has room for words or for an emoji, not both.
+    51.2 OK      Proposals used to take me five hours. Twenty minutes now.
+        weakest: STAKES (20)
+    37.8 WEAK    If you run a coaching business, watch this.
+        weakest: SPECIFICITY (15)
+     9.6 WEAK    Hey guys, today I wanted to talk about content strategy
+        weakest: FRONTLOAD (0)
+        dealbreaker: Greeting. Nobody came to the feed to be greeted.
+
+Shoot the top one. If the top one is under 50, none of these are the hook.
+
+{
+  "hook": "I lost $18,000 because of one missing contract.",
+  "checks": {
+    "LENGTH": {
+      "score": 100.0,
+      "detail": "8 words, 47 chars, ~2.9s spoken (want 5-12 words)"
+    },
+    "SPECIFICITY": {
+      "score": 75,
+      "detail": "1 concrete marker(s): $18,000"
+    },
+    "STAKES": {
+      "score": 100.0,
+      "detail": "2 tension marker(s): lost, a price"
+    },
+    "FRONTLOAD": {
+      "score": 100.0,
+      "detail": "payload at word 2"
+    },
+    "ADDRESS": {
+      "score": 70.0,
+      "detail": "first person, no viewer named"
+    }
+  },
+  "weakest": "ADDRESS",
+  "flags": [],
+  "score": 81.4,
+  "verdict": "STRONG"
+}
+{
+  "wpm": 165,
+  "target": 30.0,
+  "total_seconds": 21.09,
+  "total_words": 58,
+  "beats": [
+    {
+      "n": 1,
+      "start": 0.0,
+      "dur": 2.91,
+      "words": 8,
+      "text": "I lost $18,000 because of one missing contract.",
+      "concrete": 2,
+      "label": "HOOK",
+      "flags": []
+    },
+    {
+      "n": 2,
+      "start": 2.91,
+      "dur": 9.09,
+      "words": 25,
+      "text": "Here is the exact clause I now put in every single proposal I send, and it has saved me more than once already this year.",
+      "concrete": 0,
+      "label": "MID",
+      "flags": [
+        "9.1s on one beat"
+      ]
+    },
+    {
+      "n": 3,
+      "start": 12.0,
+      "dur": 2.91,
+      "words": 8,
+      "text": "Section 4. Payment on delivery, not on approval.",
+      "concrete": 2,
+      "label": "",
+      "flags": []
+    },
+    {
+      "n": 4,
+      "start": 14.91,
+      "dur": 2.91,
+      "words": 8,
+      "text": "Approval is a feeling. Delivery is a date.",
+      "concrete": 1,
+      "label": "",
+      "flags": []
+    },
+    {
+      "n": 5,
+      "start": 17.82,
+      "dur": 3.27,
+      "words": 9,
+      "text": "That one word change is worth $18,000 to me.",
+      "concrete": 2,
+      "label": "CTA",
+      "flags": []
+    }
+  ],
+  "notes": [
+    "Beat(s) 2 run past 4s. Either split the line or change what is on screen inside it. A static frame is where people leave.",
+    "Loops: the last beat repeats \"$18,000\" from the hook. Second watches are free reach.",
+    "8.9s under target. Either add 24 words or shoot it short. Short is usually right."
+  ]
+}
+{
+  "characters": 237,
+  "limit": 2200,
+  "truncate_at": 125,
+  "visible": "I lost $18,000 because of one missing clause in a contract, and the worst part is that I had read the thing twice before I si",
+  "truncated": true,
+  "first_line_chars": 133,
+  "hashtags": [
+    "#freelance",
+    "#contracts",
+    "#agencyowner"
+  ],
+  "mentions": [],
+  "links": [],
+  "emoji": 0,
+  "asks": [
+    "comment a keyword"
+  ],
+  "checks": [
+    {
+      "check": "LENGTH",
+      "status": "PASS",
+      "detail": "237 / 2200 characters"
+    },
+    {
+      "check": "FIRST LINE",
+      "status": "WARN",
+      "detail": "133 characters, so it gets cut at 125 mid-thought. Fine if the cut is a cliffhanger, bad if it is a subordinate clause"
+    },
+    {
+      "check": "HOOK IS CONCRETE",
+      "status": "PASS",
+      "detail": "2 number(s) or name(s) in the visible window"
+    },
+    {
+      "check": "HASHTAGS",
+      "status": "PASS",
+      "detail": "3 tag(s): #freelance #contracts #agencyowner"
+    },
+    {
+      "check": "TAG PLACEMENT",
+      "status": "PASS",
+      "detail": "tags are below the fold"
+    },
+    {
+      "check": "LINKS",
+      "status": "PASS",
+      "detail": "no dead links in the body"
+    },
+    {
+      "check": "ONE ASK",
+      "status": "PASS",
+      "detail": "one call to action: comment a keyword"
+    },
+    {
+      "check": "EMOJI",
+      "status": "PASS",
+      "detail": "0 emoji, 0.0 per 100 characters"
+    },
+    {
+      "check": "SEARCH TERMS",
+      "status": "WARN",
+      "detail": "1/2 present, 0 in the visible window. Missing: client contracts"
+    }
+  ],
+  "verdict": "REVIEW"
+}
+{
+  "text": "Right now, it's not just about posting, it's about connecting. Let's look at the big strategies that will change your content.\nWe use new tools, clean workflows, and solid systems.! How.\n🚀 Get your potential\n🔥 Improve your brand\n✨ Transform your life! #viral #fyp #explore #reels #instagood #love\n",
+  "report": {
+    "invisible": [],
+    "typographic": [
+      {
+        "name": "— EM DASH",
+        "count": 1,
+        "to": ","
+      }
+    ],
+    "lexical": [
+      {
+        "find": "in this video i'm going to show you",
+        "replace": "(deleted)",
+        "count": 1,
+        "family": "openers"
+      },
+      {
+        "find": "in today's fast-paced world",
+        "replace": "right now",
+        "count": 1,
+        "family": "openers"
+      },
+      {
+        "find": "follow for more",
+        "replace": "(deleted)",
+        "count": 1,
+        "family": "closers"
+      },
+      {
+        "find": "stop scrolling",
+        "replace": "(deleted)",
+        "count": 1,
+        "family": "openers"
+      },
+      {
+        "find": "revolutionize",
+        "replace": "change",
+        "count": 1,
+        "family": "verbs"
+      },
+      {
+        "find": "game-changing",
+        "replace": "big",
+        "count": 1,
+        "family": "adjectives"
+      },
+      {
+        "find": "cutting-edge",
+        "replace": "new",
+        "count": 1,
+        "family": "adjectives"
+      },
+      {
+        "find": "delve into",
+        "replace": "look at",
+        "count": 1,
+        "family": "verbs"
+      },
+      {
+        "find": "leverage",
+        "replace": "use",
+        "count": 1,
+        "family": "verbs"
+      },
+      {
+        "find": "seamless",
+        "replace": "clean",
+        "count": 1,
+        "family": "adjectives"
+      },
+      {
+        "find": "elevate",
+        "replace": "improve",
+        "count": 1,
+        "family": "verbs"
+      },
+      {
+        "find": "unlock",
+        "replace": "get",
+        "count": 1,
+        "family": "verbs"
+      },
+      {
+        "find": "robust",
+        "replace": "solid",
+        "count": 1,
+        "family": "adjectives"
+      }
+    ],
+    "structures": [
+      {
+        "name": "\"It's not just X, it's Y\"",
+        "count": 1,
+        "fix": "Say the one thing you actually mean. Delete the setup half."
+      },
+      {
+        "name": "Rocket / fire / bulb / sparkle / dart emoji",
+        "count": 3,
+        "fix": "One emoji max, and not one of these five."
+      },
+      {
+        "name": "Hashtag wall (5+)",
+        "count": 1,
+        "fix": "Three hashtags. LinkedIn stopped rewarding the wall."
+      },
+      {
+        "name": "Emoji bullet list",
+        "count": 3,
+        "fix": "Use a hyphen or a line break. Emoji bullets are the single most template-looking thing in a caption."
+      }
+    ]
+  }
+}
+{
+  "source": "en_slop.txt",
+  "checks": {
+    "BURSTINESS": {
+      "score": 55.3,
+      "detail": "variation 0.49 across 9 sentences (want 0.55+)"
+    },
+    "SPECIFICITY": {
+      "score": 76.1,
+      "detail": "3 concrete markers, 4.7 per 100 words (want 4+)"
+    },
+    "SLOP DENSITY": {
+      "score": 0.0,
+      "detail": "14 stock terms, 21.9 per 100 words (cutting-edge, delve, delve into, elevate, ...)"
+    },
+    "FINGERPRINT": {
+      "score": 60.7,
+      "detail": "0 invisible, 1 em dash, 0 curly quote, 0 ellipsis, 0 hard space"
+    },
+    "VOICE": {
+      "score": 70.0,
+      "detail": "7.8 contractions, 10.9 personal pronouns per 100 words, 10 structural tell(s) [rocket, hashtag-wall, in-this-video, emoji-bullets]"
+    }
+  },
+  "human_score": 31.5,
+  "verdict": "FLAGGED"
+}
+{
+  "baseline": "account median",
+  "n": 3,
+  "accounts": 3,
+  "reels": [
+    {
+      "account": "@c",
+      "followers": 4000,
+      "median": 3000,
+      "views": 180000,
+      "hook": "steal this four line follow up it took me two years",
+      "baseline": 3000,
+      "outlier": 60.0,
+      "formula_id": 9,
+      "formula": "The Steal",
+      "words": 11,
+      "hook_score": 57.2,
+      "hook_verdict": "OK"
+    },
+    {
+      "account": "@a",
+      "followers": 48000,
+      "median": 11000,
+      "views": 412000,
+      "hook": "nobody tells you that your first 30 reels are supposed to flop",
+      "baseline": 11000,
+      "outlier": 37.45,
+      "formula_id": 3,
+      "formula": "Nobody Tells You",
+      "words": 12,
+      "hook_score": 85.6,
+      "hook_verdict": "STRONG"
+    },
+    {
+      "account": "@b",
+      "followers": 2000000,
+      "median": 900000,
+      "views": 1200000,
+      "hook": "in this video I am going to show you my morning routine",
+      "baseline": 900000,
+      "outlier": 1.33,
+      "formula_id": null,
+      "formula": "unclassified",
+      "words": 12,
+      "hook_score": 13.2,
+      "hook_verdict": "WEAK"
+    }
+  ],
+  "top_formulas": [
+    [
+      "The Steal",
+      1
+    ]
+  ],
+  "top_hook_score": 57.2,
+  "bottom_hook_score": 13.2,
+  "top_words": 11,
+  "bottom_words": 12,
+  "unclassified": 1
+}

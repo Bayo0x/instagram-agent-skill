@@ -18,8 +18,13 @@ Structural tells (rule-of-three, "not just X, it's Y", hashtag walls) are
 REPORTED, never auto-rewritten - rewriting a sentence's shape needs judgement,
 so that is the model's job, not a regex's.
 
+French: --lang fr (or auto) loads slop.fr.json: French AI vocabulary ("plongeons
+dans", "incontournable", "n'hésitez pas à", "dans un monde en constante
+évolution"), guillemets « » and the narrow no-break spaces French AI text puts
+before : ; ! ?, and French structural tells ("ce n'est pas juste X, c'est Y").
+
 Usage
-  python3 humanize.py draft.txt
+  python3 humanize.py draft.txt --lang fr
   python3 humanize.py draft.txt --report
   pbpaste | python3 humanize.py - --report
   python3 humanize.py draft.txt --json
@@ -35,6 +40,22 @@ import unicodedata
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LEX = os.path.join(HERE, "slop.json")
+LEX_FR = os.path.join(HERE, "slop.fr.json")
+LANG = "en"     # set by humanize()
+
+_FR_MARKERS = {"le", "la", "les", "des", "est", "une", "et", "pour", "pas", "que",
+               "qui", "dans", "sur", "avec", "je", "tu", "vous", "mon", "ton",
+               "c'est", "j'ai", "ça", "mais", "plus", "ce", "cette", "au", "du"}
+_EN_MARKERS = {"the", "and", "is", "you", "to", "of", "that", "it", "for", "with",
+               "this", "my", "your", "i", "was", "are", "how", "what", "on", "in"}
+
+
+def detect_lang(text):
+    toks = re.findall(r"[\w'’]+", text.lower())
+    fr = sum(1 for t in toks if t.replace("’", "'") in _FR_MARKERS)
+    en = sum(1 for t in toks if t in _EN_MARKERS)
+    fr += len(re.findall(r"[éèêàùçôîâ]", text.lower())) * 0.5
+    return "fr" if fr > en else "en"
 
 URL_RE = re.compile(r"https?://\S+|www\.\S+|\S+@\S+\.\S+")
 SENT_RE = re.compile(r"[^.!?\n]+[.!?]*")
@@ -104,6 +125,10 @@ def pass_typographic(text, lex):
         if ch == "—":
             # " word — word " and "word—word" both collapse to a comma + space.
             text = re.sub(r"\s*—\s*", ", ", text)
+        elif ch == "«":
+            text = re.sub(r"«\s*", '"', text)
+        elif ch == "»":
+            text = re.sub(r"\s*»", '"', text)
         elif ch == "–":
             text = re.sub(r"\s*–\s*(?=\d)", "-", text)      # 5–10  -> 5-10
             text = re.sub(r"\s+–\s+", ", ", text)            # used as em dash
@@ -133,8 +158,15 @@ def pass_lexical(text, lex):
                      key=lambda e: len(e["find"]), reverse=True)
     for entry in entries:
         find = entry["find"]
-        pattern = re.compile(r"\b" + re.escape(find).replace(r"\ ", r"\s+") + r"\b",
-                             re.IGNORECASE)
+        if LANG == "fr":
+            # Les entrées françaises peuvent finir sur une virgule ou une
+            # apostrophe ("de plus,", "afin d'") : \b n'y marche pas.
+            body = re.escape(find).replace(r"\ ", r"\s+").replace("'", "['’]").replace("’", "['’]")
+            pattern = re.compile(r"(?<![\w])" + body + (r"(?![\w])" if find[-1].isalnum() else ""),
+                                 re.IGNORECASE)
+        else:
+            pattern = re.compile(r"\b" + re.escape(find).replace(r"\ ", r"\s+") + r"\b",
+                                 re.IGNORECASE)
         found = pattern.findall(text)
         if not found:
             continue
@@ -148,7 +180,13 @@ def pass_lexical(text, lex):
     text = re.sub(r"(?m)^[ \t]*(?:[,.;:]+[ \t]*)+", "", text)
     text = re.sub(r"(?m)^[ \t](?=\S)", "", text)       # one space left by a deletion.
                                                       # Deeper indents are deliberate.
-    text = re.sub(r"\s+([,.;:!?])", r"\1", text)
+    if LANG == "fr":
+        # En français on garde l'espace avant ! ? : ; (et on ne recolle
+        # jamais une ponctuation à la ligne d'avant).
+        text = re.sub(r"(?m)^[ \t]*[!?;:]+[ \t]*", "", text)
+        text = re.sub(r"[ \t]+([,.])", r"\1", text)
+    else:
+        text = re.sub(r"\s+([,.;:!?])", r"\1", text)
     text = re.sub(r",\s*([,.;:!?])", r"\1", text)      # an em dash became a comma,
                                                       # then the clause after it went
     text = text.replace("...", "\x00ELL\x00")          # protect real ellipses
@@ -161,6 +199,10 @@ def pass_lexical(text, lex):
     # a splice ("is important, also, it's proof"). Promote it to a full stop.
     text = re.sub(r",\s*(also|so|still|basically|in the end)\s*,\s*",
                   lambda m: ". " + m.group(1)[0].upper() + m.group(1)[1:] + ", ", text)
+    if LANG == "fr":
+        text = re.sub(r",\s*(aussi|donc|bref|au final|en gros|mais)\s*,\s*",
+                      lambda m: ". " + m.group(1)[0].upper() + m.group(1)[1:] + ", ", text)
+        text = re.sub(r"(?<![\w])et et(?![\w])", "et", text)
     return text, hits
 
 
@@ -196,14 +238,18 @@ def restore_capitals(original, text):
     a deliberately lower-case voice is a style, not an artefact, and shouting
     over it would be exactly the kind of thing this script exists to stop.
     """
-    starts = re.findall(r"(?:^|[.!?]\s+|\n)\s*([A-Za-z])", original)
+    letter = "A-Za-zÀ-ÖØ-öø-ÿ" if LANG == "fr" else "A-Za-z"
+    lower = "a-zà-öø-ÿ" if LANG == "fr" else "a-z"
+    starts = re.findall(r"(?:^|[.!?]\s+|\n)\s*([" + letter + "])", original)
     if not starts or sum(1 for c in starts if c.isupper()) * 2 < len(starts):
         return text
-    return re.sub(r"(?:^|(?<=[.!?] )|(?<=[.!?]\n)|(?<=\n))\s*([a-z])",
+    return re.sub(r"(?:^|(?<=[.!?] )|(?<=[.!?]\n)|(?<=\n))\s*([" + lower + "])",
                   lambda m: m.group(0)[:-1] + m.group(1).upper(), text)
 
 
-def humanize(text, lex):
+def humanize(text, lex, lang=None):
+    global LANG
+    LANG = lang if lang in ("en", "fr") else detect_lang(text)
     raw_for_case = text
     text, urls = protect_urls(text)
     text, inv = pass_invisible(text, lex)
@@ -259,12 +305,15 @@ def main():
     ap.add_argument("-o", "--out", help="write cleaned text here instead of stdout")
     ap.add_argument("--report", action="store_true", help="print what changed, to stderr")
     ap.add_argument("--json", action="store_true", help="emit {text, report} as JSON")
-    ap.add_argument("--lexicon", default=LEX, help="path to slop.json")
+    ap.add_argument("--lexicon", help="path to the lexicon (default slop.json, or slop.fr.json in French)")
+    ap.add_argument("--lang", choices=["auto", "fr", "en"], default="auto",
+                    help="langue du texte (défaut: auto)")
     args = ap.parse_args()
 
     raw = sys.stdin.read() if args.input == "-" else open(args.input, encoding="utf-8").read()
-    lex = load_lexicon(args.lexicon)
-    clean, report = humanize(raw, lex)
+    lang = args.lang if args.lang != "auto" else detect_lang(raw)
+    lex = load_lexicon(args.lexicon or (LEX_FR if lang == "fr" else LEX))
+    clean, report = humanize(raw, lex, lang)
 
     if args.json:
         print(json.dumps({"text": clean, "report": report}, indent=2, ensure_ascii=False))

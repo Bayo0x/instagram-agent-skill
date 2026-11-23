@@ -14,6 +14,26 @@ The only honest source of what works for an account is that account. Every
 rule in every Instagram guide, including the ones in this pack, is a prior.
 The user's own last 30 posts are the evidence.
 
+## Langue (fork FR)
+
+Ce fork marche en français et en anglais. Écris dans la langue de
+l'utilisateur, ou celle que `voice.md` indique.
+
+En français :
+- Français parlé, pas écrit : "t'as", "ça", le "ne" qui saute quand c'est la
+  voix de la personne. Tutoiement ou vouvoiement selon `voice.md` (par défaut,
+  celui que la personne utilise sur son compte).
+- Pas de tirets cadratins (—), pas de guillemets « » dans un texte à poster,
+  pas de tournures d'IA ("plongeons dans", "incontournable", "n'hésitez pas à").
+- Montants en euros, espace des milliers : "18 000 €". Jamais de chiffre
+  inventé : `{{ton chiffre}}` et un flag.
+- Les scripts prennent `--lang fr` (sinon `--lang auto`, détecté sur le texte).
+  Les formules de hook FR sont dans `ig-reel/hooks.fr.json`, le lexique IA
+  français dans `ig-human/slop.fr.json`.
+- Les seuils des scripts viennent d'un test sur des hooks anglais. En français
+  ils n'ont pas encore été recalés sur un corpus : c'est un signal, pas un
+  verdict.
+
 ## Input
 
 Ask for whichever the user has:
@@ -53,7 +73,10 @@ and be willing to conclude something the user will not like:
 - **Hold at 3 seconds.** If the top and bottom differ here, it is the hook and
   nothing else, and everything downstream is a distraction.
 - **Hook formula.** Which ids from `ig-reel/hooks.json` are in the top five?
-- **Format.** Reel, carousel, single image.
+- **Format.** Reel, carousel, single image. For Reels, also facecam vs
+  faceless vs voix off (the `format` field in `log.md`). If the user is running
+  a facecam test, compare the two groups on hold at 3s, sends per reach and
+  DMs, say how many reels each side has, and refuse to call it under 4 per side.
 - **Length.** Group into under 15s, 15 to 30s, 30 to 60s, over 60s.
 - **Theme.**
 - **Whether the user replied to comments in the first hour.**

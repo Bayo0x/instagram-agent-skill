@@ -13,6 +13,26 @@ description: >-
 
 Turns one raw idea into a Reel that somebody finishes.
 
+## Langue (fork FR)
+
+Ce fork marche en français et en anglais. Écris dans la langue de
+l'utilisateur, ou celle que `voice.md` indique.
+
+En français :
+- Français parlé, pas écrit : "t'as", "ça", le "ne" qui saute quand c'est la
+  voix de la personne. Tutoiement ou vouvoiement selon `voice.md` (par défaut,
+  celui que la personne utilise sur son compte).
+- Pas de tirets cadratins (—), pas de guillemets « » dans un texte à poster,
+  pas de tournures d'IA ("plongeons dans", "incontournable", "n'hésitez pas à").
+- Montants en euros, espace des milliers : "18 000 €". Jamais de chiffre
+  inventé : `{{ton chiffre}}` et un flag.
+- Les scripts prennent `--lang fr` (sinon `--lang auto`, détecté sur le texte).
+  Les formules de hook FR sont dans `ig-reel/hooks.fr.json`, le lexique IA
+  français dans `ig-human/slop.fr.json`.
+- Les seuils des scripts viennent d'un test sur des hooks anglais. En français
+  ils n'ont pas encore été recalés sur un corpus : c'est un signal, pas un
+  verdict.
+
 Two tools live in this folder and they both actually run. Use them. Do not
 eyeball the hook and do not guess at the length.
 
@@ -20,6 +40,8 @@ eyeball the hook and do not guess at the length.
 python3 hookscore.py hooks.txt              # rank your hook options
 python3 hookscore.py --hook "one line"      # score a single one
 python3 beats.py script.txt --target 30     # timed beat sheet before you shoot
+python3 hookscore.py hooks.txt --lang fr    # en français (auto par défaut)
+python3 beats.py script.txt --target 30 --lang fr
 ```
 
 ## Before you write
@@ -29,7 +51,8 @@ python3 beats.py script.txt --target 30     # timed beat sheet before you shoot
    to. If it does not exist, ask for **three of their own reels**, transcribe or
    read them, infer the voice, and write the file. A script in the wrong voice
    is unusable, because they have to say it out loud.
-2. Read `hooks.json` in this folder. 26 formulas, each with a template, a filled
+2. Read `hooks.json` in this folder (`hooks.fr.json` when writing in French:
+   same 26 formulas, French templates and French match regexes). 26 formulas, each with a template, a filled
    example, the on-screen version, what it is for, and how it gets ruined.
    Four of them are in there because they kept turning up in real hooks, not
    because they completed a pattern.
@@ -39,6 +62,47 @@ python3 beats.py script.txt --target 30     # timed beat sheet before you shoot
 4. If `~/.claude/instagram/swipe.md` exists, read it. `/ig-viral` writes that
    file, and it is the user's own evidence about which formulas are working in
    their niche right now. It beats the defaults in this file.
+
+## Pick the format first
+
+Three formats, and the script is not the same for each. Ask which one if
+`voice.md` does not say, and write for that one only.
+
+**1. Facecam (to camera).** The person talks to the phone. Everything below
+applies as written: spoken hook, spoken script, beat sheet at their wpm.
+
+**2. Faceless, texte à l'écran + musique.** No voice. The on-screen cards ARE
+the script. Write the hook card first, then one card per beat, six words max.
+There is nothing to say out loud, so do not run `beats.py` at a speaking rate:
+time the cards for reading instead, 1.5 to 2.5 seconds per card, and the hook
+card on screen from frame 1. Still score the hook card with `hookscore.py`,
+since it is read the same way a spoken hook is heard.
+
+**3. Voix off sur écran.** A screen recording (a website being scrolled, a
+before/after, a tool in use) with a voiceover. The visual carries the proof,
+the voice carries the claim. Run `beats.py` on the voiceover and change what
+is on screen at every beat.
+
+### Facecam en mode essai
+
+If the user is trying facecam for the first time to see whether it beats their
+usual format, set it up as a test, not a switch:
+
+- **The test.** 4 to 6 facecam Reels over 2 to 3 weeks, alternated with the
+  usual format, same themes, so the format is the only thing that changes.
+  Log each one with `format: facecam` (see step 7) so `/ig-audit` can compare.
+- **Judge on** hold at 3 seconds, sends per reach, profile visits and DMs.
+  Not views: one lucky reel proves nothing either way.
+- **Keep the bar low.** 15 to 30 seconds. One idea. A phone leaned against
+  something at eye level, a window in front of them for light, no tripod
+  needed. Film it one sentence per take and cut between takes: nobody has to
+  get 30 seconds right in one go.
+- **First frame moves.** Start mid-gesture or walking into frame, with the hook
+  card already on screen. A still face at 0:00 is three hooks wasted.
+- **Write it to be said.** Short lines, their words, nothing they would have to
+  rehearse. Read it out loud once before showing it; anything that trips is
+  rewritten.
+- **Never call it a verdict** before the test is done.
 
 ## The shape
 
@@ -94,7 +158,7 @@ Reply "yes" to log it, or tell me what to change.
 
 **7. Never publish.** This skill produces a script. The user shoots it and
 posts it. On "yes", append to `~/.claude/instagram/log.md` with the date, the
-hook formula used and the first line, so `/ig-audit` has a history later.
+format (facecam / faceless / voix off), the hook formula used and the first line, so `/ig-audit` has a history later.
 
 ## On-screen text is a separate script
 

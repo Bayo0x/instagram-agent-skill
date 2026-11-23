@@ -12,6 +12,26 @@ description: >-
 The control room. Everything else in this pack executes; this decides what gets
 executed. Run it once a week, on the same day.
 
+## Langue (fork FR)
+
+Ce fork marche en français et en anglais. Écris dans la langue de
+l'utilisateur, ou celle que `voice.md` indique.
+
+En français :
+- Français parlé, pas écrit : "t'as", "ça", le "ne" qui saute quand c'est la
+  voix de la personne. Tutoiement ou vouvoiement selon `voice.md` (par défaut,
+  celui que la personne utilise sur son compte).
+- Pas de tirets cadratins (—), pas de guillemets « » dans un texte à poster,
+  pas de tournures d'IA ("plongeons dans", "incontournable", "n'hésitez pas à").
+- Montants en euros, espace des milliers : "18 000 €". Jamais de chiffre
+  inventé : `{{ton chiffre}}` et un flag.
+- Les scripts prennent `--lang fr` (sinon `--lang auto`, détecté sur le texte).
+  Les formules de hook FR sont dans `ig-reel/hooks.fr.json`, le lexique IA
+  français dans `ig-human/slop.fr.json`.
+- Les seuils des scripts viennent d'un test sur des hooks anglais. En français
+  ils n'ont pas encore été recalés sur un corpus : c'est un signal, pas un
+  verdict.
+
 ## Input
 
 If `~/.claude/instagram/voice.md`, `swipe.md` and `log.md` exist, read them.
@@ -26,6 +46,11 @@ If they do not exist, ask for four things and write them down:
 3. What actually happened this week: a client call, a number, a mistake, a
    thing they built, an argument they had. This is where posts come from.
 4. Ten accounts worth being visible to.
+
+If the user is testing facecam against their usual format, the plan carries
+the test: one or two facecam Reels a week out of the Reels slots, on the same
+themes as the others, for 2 to 3 weeks, then `/ig-audit` decides. Do not plan
+more facecam than the user said they are up for.
 
 ## What to post
 

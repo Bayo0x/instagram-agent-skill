@@ -14,8 +14,12 @@ numbers too - but the only honest claim is the one on this line.
 
 Each check returns a HUMAN score from 0 to 100. Higher is better.
 
+French: --lang fr (or auto) loads slop.fr.json and swaps the voice check:
+French elisions are compulsory, so "contractions" become spoken markers (ça,
+t'as, du coup, a dropped "ne"), and guillemets count as fingerprint.
+
 Usage
-  python3 detect.py draft.txt
+  python3 detect.py draft.txt --lang fr
   pbpaste | python3 detect.py -
   python3 detect.py draft.txt --json
   python3 detect.py before.txt after.txt      # compare two drafts
@@ -39,6 +43,39 @@ PRONOUNS = re.compile(r"\b(i|me|my|mine|we|us|our|you|your)\b", re.IGNORECASE)
 NUMBERS = re.compile(r"\b\d[\d,.]*%?\b|\$\d")
 PROPER = re.compile(r"(?<![.!?]\s)(?<!^)\b[A-Z][a-z]{2,}\b", re.MULTILINE)
 
+# Français. Les élisions (j', c', l') sont obligatoires en français, donc ce
+# n'est pas un signe d'oral. Ce qui l'est : "ça", "t'as", "y'a", "du coup",
+# "genre", le "ne" qui saute ("je sais pas"). Une IA écrit "cela", "afin de",
+# et garde toutes ses négations.
+LEX_FR = os.path.join(HERE, "slop.fr.json")
+FR_WORD_RE = re.compile(r"[^\W\d_]+(?:['’][^\W\d_]+)*")
+FR_INFORMAL = re.compile(
+    r"(?i)(?<![\w])(?:ça|t['’]as|t['’]es|t['’]étais|y['’]a|j['’]suis|chuis|j['’]sais|ouais|"
+    r"du coup|genre|bref|perso|franchement|carrément|en vrai|grave|trop|bah|ben|hein|"
+    r"truc|trucs|boulot|bosser|bosse|kiffe|kiffer|mec|pote|potes|ok|okay)(?![\w])")
+FR_DROPPED_NE = re.compile(
+    r"(?i)(?<![\w])(?:je|j['’]|tu|t['’]|on|il|elle|c['’]|ça)\s*(?:\w+['’])?\w+\s+(?:pas|jamais|plus|rien)(?![\w])")
+FR_PRONOUNS = re.compile(
+    r"(?i)(?<![\w])(?:je|me|moi|mon|ma|mes|nous|notre|nos|on|tu|te|toi|ton|ta|tes|vous|votre|vos)(?![\w])"
+    r"|(?<![\w])[jmt]['’]")
+FR_NUMBERS = re.compile(r"\b\d[\d,.]*\s?(?:%|€)?|€\s?\d")
+FR_PROPER = re.compile(r"(?<![.!?]\s)(?<!^)\b[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]{2,}\b", re.MULTILINE)
+LANG = "en"     # set by run()
+
+_FR_MARKERS = {"le", "la", "les", "des", "est", "une", "et", "pour", "pas", "que",
+               "qui", "dans", "sur", "avec", "je", "tu", "vous", "mon", "ton",
+               "c'est", "j'ai", "ça", "mais", "plus", "ce", "cette", "au", "du"}
+_EN_MARKERS = {"the", "and", "is", "you", "to", "of", "that", "it", "for", "with",
+               "this", "my", "your", "i", "was", "are", "how", "what", "on", "in"}
+
+
+def detect_lang(text):
+    toks = re.findall(r"[\w'’]+", text.lower())
+    fr = sum(1 for t in toks if t.replace("’", "'") in _FR_MARKERS)
+    en = sum(1 for t in toks if t in _EN_MARKERS)
+    fr += len(re.findall(r"[éèêàùçôîâ]", text.lower())) * 0.5
+    return "fr" if fr > en else "en"
+
 
 def clamp(n):
     return max(0.0, min(100.0, n))
@@ -56,7 +93,7 @@ def sentences(text):
 
 
 def words(text):
-    return WORD_RE.findall(text)
+    return (FR_WORD_RE if LANG == "fr" else WORD_RE).findall(text)
 
 
 def check_burstiness(text):
@@ -76,7 +113,8 @@ def check_specificity(text):
     if len(w) < 25:
         return 50.0, "too short to judge"
     per100 = 100 / len(w)
-    hits = len(NUMBERS.findall(text)) + len(set(PROPER.findall(text)))
+    numbers, proper = (FR_NUMBERS, FR_PROPER) if LANG == "fr" else (NUMBERS, PROPER)
+    hits = len(numbers.findall(text)) + len(set(proper.findall(text)))
     density = hits * per100
     score = scale(density, human=6.0, machine=0.5)
     return score, f"{hits} concrete markers, {density:.1f} per 100 words (want 4+)"
@@ -89,8 +127,14 @@ def check_slop(text, lex):
         return 50.0, "empty"
     hits, found = 0, []
     for entry in lex["words"] + lex["phrases"]:
-        pattern = re.compile(r"\b" + re.escape(entry["find"]).replace(r"\ ", r"\s+") + r"\b",
-                             re.IGNORECASE)
+        find = entry["find"]
+        if LANG == "fr":
+            body = re.escape(find).replace(r"\ ", r"\s+").replace("'", "['’]").replace("’", "['’]")
+            pattern = re.compile(r"(?<![\w])" + body + (r"(?![\w])" if find[-1].isalnum() else ""),
+                                 re.IGNORECASE)
+        else:
+            pattern = re.compile(r"\b" + re.escape(find).replace(r"\ ", r"\s+") + r"\b",
+                                 re.IGNORECASE)
         n = len(pattern.findall(text))
         if n:
             hits += n
@@ -110,11 +154,14 @@ def check_fingerprint(text):
     curly = sum(text.count(c) for c in "‘’“”")
     ellip = text.count("…")
     nbsp = sum(text.count(c) for c in "   ")
-    total = invisible * 4 + em * 2 + curly + ellip + nbsp
+    guill = text.count("«") + text.count("»") if LANG == "fr" else 0
+    total = invisible * 4 + em * 2 + curly + ellip + nbsp + guill
     per1k = total * 1000 / max(len(text), 1)
     score = scale(per1k, human=0.0, machine=12.0)
     detail = (f"{invisible} invisible, {em} em dash, {curly} curly quote, "
               f"{ellip} ellipsis, {nbsp} hard space")
+    if LANG == "fr":
+        detail += f", {guill} guillemet"
     return score, detail
 
 
@@ -124,8 +171,16 @@ def check_voice(text, lex):
     if len(w) < 25:
         return 50.0, "too short to judge"
     per100 = 100 / len(w)
-    contractions = len(CONTRACTIONS.findall(text)) * per100
-    person = len(PRONOUNS.findall(text)) * per100
+    if LANG == "fr":
+        # "Contractions" en français = marques d'oral : ça, t'as, du coup,
+        # et les négations sans "ne".
+        dropped = [m for m in FR_DROPPED_NE.finditer(text)
+                   if not re.search(r"(?i)(?<![\w])(?:ne|n['’])", m.group(0))]
+        contractions = (len(FR_INFORMAL.findall(text)) + len(dropped)) * per100
+        person = len(FR_PRONOUNS.findall(text)) * per100
+    else:
+        contractions = len(CONTRACTIONS.findall(text)) * per100
+        person = len(PRONOUNS.findall(text)) * per100
     tells = 0
     names = []
     for s in lex["structures"]:
@@ -144,7 +199,8 @@ def check_voice(text, lex):
     if uniform:
         score -= 12
         names.append("uniform-bullets")
-    detail = (f"{contractions:.1f} contractions, {person:.1f} personal pronouns "
+    label = "spoken markers" if LANG == "fr" else "contractions"
+    detail = (f"{contractions:.1f} {label}, {person:.1f} personal pronouns "
               f"per 100 words, {tells} structural tell(s)")
     if names:
         detail += " [" + ", ".join(names[:4]) + "]"
@@ -154,7 +210,9 @@ def check_voice(text, lex):
 CHECKS = ["BURSTINESS", "SPECIFICITY", "SLOP DENSITY", "FINGERPRINT", "VOICE"]
 
 
-def run(text, lex):
+def run(text, lex, lang=None):
+    global LANG
+    LANG = lang if lang in ("en", "fr") else detect_lang(text)
     results = {}
     results["BURSTINESS"] = check_burstiness(text)
     results["SPECIFICITY"] = check_specificity(text)
@@ -195,19 +253,22 @@ def main():
     ap.add_argument("input", nargs="?", default="-", help="file, or - for stdin")
     ap.add_argument("compare", nargs="?", help="second file, to show before/after")
     ap.add_argument("--json", action="store_true")
-    ap.add_argument("--lexicon", default=LEX)
+    ap.add_argument("--lexicon", help="default slop.json, or slop.fr.json in French")
+    ap.add_argument("--lang", choices=["auto", "fr", "en"], default="auto",
+                    help="langue du texte (défaut: auto)")
     args = ap.parse_args()
 
-    lex = json.load(open(args.lexicon, encoding="utf-8"))
     read = lambda p: sys.stdin.read() if p == "-" else open(p, encoding="utf-8").read()
 
     targets = [(args.input, read(args.input))]
     if args.compare:
         targets.append((args.compare, read(args.compare)))
+    lang = args.lang if args.lang != "auto" else detect_lang(targets[0][1])
+    lex = json.load(open(args.lexicon or (LEX_FR if lang == "fr" else LEX), encoding="utf-8"))
 
     payload = []
     for name, text in targets:
-        results, overall, verdict = run(text, lex)
+        results, overall, verdict = run(text, lex, lang)
         payload.append({
             "source": name,
             "checks": {k: {"score": round(v[0], 1), "detail": v[1]} for k, v in results.items()},
@@ -220,7 +281,7 @@ def main():
         return
 
     for (name, text), p in zip(targets, payload):
-        results, overall, verdict = run(text, lex)
+        results, overall, verdict = run(text, lex, lang)
         render(results, overall, verdict, label=os.path.basename(name) if args.compare else None)
     if args.compare:
         a, b = payload
